@@ -7,11 +7,11 @@ function(input, output) {
       filter(Directorate2 == input$directorate)
   })
   
-  returnBestTable = reactive({
+  returnTable = function(df, variableName){
     
-    tidy_comments = filterData() %>%
-      filter(!is.na(Best)) %>%
-      unnest_tokens(word, Best)
+    tidy_comments = df %>%
+      filter(!is.na(!!(sym(variableName)))) %>%
+      unnest_tokens(word, !!(sym(variableName)))
     
     tidy_comments <- tidy_comments %>%
       anti_join(stop_words)
@@ -20,12 +20,12 @@ function(input, output) {
       count(word, sort = TRUE) %>%
       slice(1:10) %>%
       as.data.frame
-  })
-   
+  }
+  
   output$bestComments <- renderDataTable({
-
+    
     datatable(
-      returnBestTable(),
+      returnTable(filterData(), "Best"),
       selection = "single"
     )
   })
@@ -34,25 +34,56 @@ function(input, output) {
     
     validate(
       need(input$bestComments_rows_selected, "")
-      )
+    )
     
-    returnBestTable() %>%
+    returnWord = returnBestTable() %>%
       slice(input$bestComments_rows_selected) %>%
       pull(word)
+    
+    filterData() %>%
+      filter(grepl(returnWord, filterData()$Best)) %>%
+      pull(Best) %>% 
+      paste("<p>", ., "</p>")
   })
   
   output$improveComments <- renderDataTable({
-
-    tidy_comments = filterData() %>%
-      filter(!is.na(Improve)) %>%
-      unnest_tokens(word, Improve)
     
-    tidy_comments <- tidy_comments %>%
-      anti_join(stop_words)
-    
-    tidy_comments %>%
-      count(word, sort = TRUE) %>%
-      slice(1:10) %>%
-      as.data.frame
+    datatable(
+      returnTable(filterData(), "Improve"),
+      selection = "single"
+    )
   })
+  
+  output$bestText = renderText({
+    
+    validate(
+      need(input$bestComments_rows_selected, "")
+    )
+    
+    returnWord = returnTable(filterData(), "Best") %>%
+      slice(input$bestComments_rows_selected) %>%
+      pull(word)
+    
+    filterData() %>%
+      filter(grepl(returnWord, filterData()$Best)) %>%
+      pull(Best) %>% 
+      paste("<p>", ., "</p>")
+  })
+  
+  output$improveText = renderText({
+    
+    validate(
+      need(input$improveComments_rows_selected, "")
+    )
+    
+    returnWord = returnTable(filterData(), "Improve") %>%
+      slice(input$improveComments_rows_selected) %>%
+      pull(word)
+    
+    filterData() %>%
+      filter(grepl(returnWord, filterData()$Improve)) %>%
+      pull(Improve) %>% 
+      paste("<p>", ., "</p>")
+  })
+  
 }

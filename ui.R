@@ -12,6 +12,7 @@ fluidPage(
   ),
   
   fluidRow(
-    column(5, textOutput("bestText"), offset = 2)
+    column(5, htmlOutput("bestText"), offset = 2),
+    column(5, htmlOutput("improveText"))
   )
 )
